@@ -15,7 +15,7 @@ cp .env.example .env
 docker compose up
 ```
 
-Всё. Postgres и сервис поднимаются одной командой, таблица создаётся при старте сервиса.
+Всё. Postgres, миграции и сервис поднимаются одной командой: сначала Postgres, затем одноразовый контейнер `migrate` накатывает SQL-миграции из `migrations/`, и только после этого стартует сервис.
 
 | Что        | Где / значение |
 |------------|----------------|
@@ -31,6 +31,17 @@ docker compose exec postgres psql -U shortener -d url_shortener
 
 Остановить: `docker compose down` (вместе с данными: `docker compose down -v`).
 После изменений в коде: `docker compose up --build`.
+
+## Миграции
+
+Схема БД живёт в `migrations/` в формате [golang-migrate](https://github.com/golang-migrate/migrate): пара `NNNNNN_<name>.up.sql` / `.down.sql` на каждое изменение. Сам сервис схему не создаёт и не меняет.
+
+Новая миграция — следующий номер (`000002_<name>.up.sql` + `.down.sql`), применится при следующем `docker compose up`. Откатить последнюю:
+
+```bash
+docker compose run --rm migrate -path=/migrations \
+  -database="postgres://shortener:shortener@postgres:5432/url_shortener?sslmode=disable" down 1
+```
 
 ## API
 
@@ -106,6 +117,7 @@ internal/config/         загрузка конфига: YAML + перемен�
 internal/http-server/    хендлеры и middleware
 internal/service/        бизнес-логика
 internal/storage/        ошибки хранилища и реализация на Postgres
+migrations/              SQL-миграции схемы БД (golang-migrate)
 tests/                   e2e-тесты
 ```
 

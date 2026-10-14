@@ -17,14 +17,6 @@ const queryTimeout = 2 * time.Second
 
 const uniqueViolation = "23505"
 
-const schema = `
-CREATE TABLE IF NOT EXISTS url (
-	id         BIGSERIAL PRIMARY KEY,
-	alias      TEXT        NOT NULL UNIQUE,
-	url        TEXT        NOT NULL,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);`
-
 type Storage struct {
 	pool *pgxpool.Pool
 }
@@ -40,11 +32,6 @@ func New(ctx context.Context, dsn string) (*Storage, error) {
 	if err := pool.Ping(ctx); err != nil {
 		pool.Close()
 		return nil, fmt.Errorf("%s: ping: %w", fn, err)
-	}
-
-	if _, err := pool.Exec(ctx, schema); err != nil {
-		pool.Close()
-		return nil, fmt.Errorf("%s: create schema: %w", fn, err)
 	}
 
 	return &Storage{pool: pool}, nil
